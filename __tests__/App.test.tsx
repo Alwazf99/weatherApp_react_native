@@ -1,69 +1,67 @@
-/**
- * @format
- */
-
-import 'react-native';
+// src/App.test.tsx
 import React from 'react';
-
-// Note: import explicitly to use the types shipped with jest.
-import {it} from '@jest/globals';
-
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
-
-import Homescreen from '../src/screens/Homescreen';
+import WeatherDetailsScreen from '../src/screens/WeatherDetailsScreen';
 import { fetchWeatherData } from '../src/services/weatherService';
+import { RouteProp } from '@react-navigation/native';
 
+type RootStackParamList = {
+  Home: undefined;
+  WeatherDetails: { city: string };
+};
+
+
+  
+  
 jest.mock('../src/services/weatherService');
 
-describe('Homescreen', () => {
-  it('renders correctly', () =>{
-    const {getByText, getByPlaceholderText } = render (<Homescreen/>);
+type WeatherDetailsScreenRouteProp = RouteProp<RootStackParamList, 'WeatherDetails'>;
 
-    expect(getByText('Weather App')).toBeTruthy();
-    expect(getByPlaceholderText('Enter city name')).toBeTruthy();
-    expect(getByText('Search')).toBeTruthy();
+describe('WeatherDetailsScreen', () => {
+  const mockRoute = {
+    params: { city: 'London' },
+  } as WeatherDetailsScreenRouteProp;
+
+  it('displays a loading indicator while data is being fetched', () => {
+    (fetchWeatherData as jest.Mock).mockReturnValue(new Promise(() => {}));
+
+    const { getByTestId } = render(
+      <WeatherDetailsScreen route={mockRoute} navigation={null} />
+    );
+
+    expect(getByTestId('loading-indicator')).toBeDefined();
   });
 
-  it('displays weather data on successfull fetch', async ()=>{
+  it('displays weather details when data is successfully fetched', async () => {
     const mockWeatherData = {
-      temperature: 25,
-      condition: 'Sunny',
-      city: 'Pune',
+      main: { temp: 20 },
+      weather: [{ description: 'Clear sky' }],
+      name: 'London',
     };
 
     (fetchWeatherData as jest.Mock).mockResolvedValue(mockWeatherData);
 
-    const { getByText, getByPlaceholderText } = render(<Homescreen/>);
+    const { getByText } = render(
+      <WeatherDetailsScreen route={mockRoute} navigation={null} />
+    );
 
-    fireEvent.changeText(getByPlaceholderText('Enter city name'), 'Pune');
-    fireEvent.press(getByText('Search'));
-
-    try {
-      await waitFor(() => {
-        expect(getByText('Temperature: 25°C')).toBeTruthy();
-        expect(getByText('Condition: Sunny')).toBeTruthy();
-        expect(getByText('City: Pune')).toBeTruthy();
-      });
-    } catch (error) {
-      console.error('Test failed:', error);
-    }
-  });
- // });
-  
-  
-
-  it('displays an error message on failed fetch', async () => {
-    const mockError = 'Failed to fetch weather data';
-    (fetchWeatherData as jest.Mock).mockRejectedValue(new Error(mockError));
-
-    const { getByText, getByPlaceholderText } = render(<Homescreen/>);
-
-    fireEvent.changeText(getByPlaceholderText('Enter city name'), 'Unknown City');
-    fireEvent.press(getByText('Search'));
-
-    await waitFor(() => expect(getByText(mockError)).toBeTruthy());
+    await waitFor(() => {
+      expect(getByText('London')).toBeDefined();
+      expect(getByText('20°C')).toBeDefined();
+      expect(getByText('Clear sky')).toBeDefined();
+    });
   });
 
+  it('displays an error message when data fetch fails', async () => {
+    (fetchWeatherData as jest.Mock).mockRejectedValue(new Error('Failed to fetch'));
+
+    const { getByText } = render(
+      <WeatherDetailsScreen route={mockRoute} navigation={null} />
+    );
+
+    await waitFor(() => {
+      expect(getByText('Failed to fetch data')).toBeDefined();
+    });
+  });
 });
-
-
+  

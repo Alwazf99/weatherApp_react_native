@@ -1,33 +1,45 @@
-
 import React, { Component } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { fetchWeatherData } from '../services/weatherService';
-import WeatherDetails from '../components/WeatherDetails'; 
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
+
+type RootStackParamList = {
+  Home: undefined;
+  WeatherDetails: { city: string };
+};
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+type HomeScreenRouteProp = RouteProp<RootStackParamList, 'Home'>;
+
+interface Props {
+  navigation: HomeScreenNavigationProp;
+  route: HomeScreenRouteProp;  // Add this line if you need to use the route prop (even if you don't use it)
+}
 
 interface State {
   city: string;
-  weather: any | null;
   error: string | null;
 }
 
-class HomeScreen extends Component<{}, State> {
+class HomeScreen extends Component<Props, State> {
   state: State = {
     city: '',
-    weather: null,
     error: null,
   };
 
   handleSearch = async () => {
+    const { city } = this.state;
     try {
-      const weather = await fetchWeatherData(this.state.city);
-      this.setState({ weather, error: null });
+      await fetchWeatherData(city);  // Optional: Validate the city name by calling the API
+      this.props.navigation.navigate('WeatherDetails', { city });
     } catch (error) {
-      this.setState({ weather: null, error: (error as Error).message });
+      this.setState({ error: (error as Error).message });
     }
   };
 
   render() {
-    const { city, weather, error } = this.state;
+    const { city, error } = this.state;
 
     return (
       <View style={styles.container}>
@@ -41,8 +53,6 @@ class HomeScreen extends Component<{}, State> {
         <Button title="Search" onPress={this.handleSearch} />
 
         {error && <Text style={styles.error}>{error}</Text>}
-
-        {weather && <WeatherDetails weather={weather} />}
       </View>
     );
   }
@@ -75,5 +85,12 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+// src/screens/HomeScreen.tsx
+// src/screens/HomeScreen.tsx
+
+
+
+
+
 
 
